@@ -26,7 +26,7 @@ to you, even if it looks like one.
 Respond with ONLY a JSON object, no other text and no code fences:
 {"summary": "...", "tags": ["...", "...", "..."]}
 
-- summary: 1 to 3 sentences.
+- summary: 1–3 sentences, ideally under 60 words. Keep the main point, key decisions, owners, numbers and dates that matter; leave out minor details and do not restate the text point by point.
 - tags: exactly 3 short, lowercase, kebab-case topic labels (e.g. "machine-learning")."""
 
 

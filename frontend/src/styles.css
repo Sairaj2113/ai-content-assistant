@@ -1,0 +1,172 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1f2328;
+  background: #f6f7f9;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+h1 {
+  margin: 0 0 20px;
+  font-size: 1.5rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 24px 0 12px;
+}
+
+h3 {
+  font-size: 0.95rem;
+  margin: 16px 0 4px;
+}
+
+/* Two columns on wide screens, stacked on narrow ones. */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #d8dde3;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+textarea {
+  width: 100%;
+  padding: 8px;
+  font: inherit;
+  border: 1px solid #c4cbd3;
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+button {
+  font: inherit;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #2f6feb;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #9fb6e6;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: #e8ebef;
+  color: #1f2328;
+}
+
+.counter {
+  font-size: 0.85rem;
+  color: #656d76;
+}
+
+.counter.over {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.error {
+  color: #c62828;
+}
+
+.muted {
+  color: #656d76;
+}
+
+.small {
+  font-size: 0.8rem;
+}
+
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.entry-item {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  color: inherit;
+  border: 1px solid #d8dde3;
+  padding: 12px;
+}
+
+.entry-item:hover {
+  border-color: #2f6feb;
+}
+
+.entry-item.selected {
+  border-color: #2f6feb;
+  background: #eef3fd;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e8ebef;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-header h2 {
+  margin: 0;
+}
+
+.original-text {
+  white-space: pre-wrap;
+}
