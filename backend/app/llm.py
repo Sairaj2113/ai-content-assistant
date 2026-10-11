@@ -1,5 +1,6 @@
 """The only module that talks to the LLM."""
 
+import logging
 import os
 from pathlib import Path
 
@@ -11,8 +12,10 @@ from .parser import LLMOutputError, parse_llm_output
 # .env lives at the repo root, one level above backend/.
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
+logger = logging.getLogger(__name__)
+
 TIMEOUT_SECONDS = 30.0
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-20b"
 
 SYSTEM_PROMPT = """You summarize and tag text.
 
@@ -50,7 +53,9 @@ def _call_llm(client: groq.Groq, text: str) -> str:
     safe_text = text.replace("</text>", "")
     response = client.chat.completions.create(
         model=os.getenv("LLM_MODEL", "").strip() or DEFAULT_MODEL,
-        max_tokens=500,
+        # Reasoning tokens count toward max_tokens, so leave headroom for the JSON.
+        max_tokens=2000,
+        reasoning_effort="low",
         temperature=0.3,
         response_format={"type": "json_object"},
         messages=[
@@ -62,22 +67,30 @@ def _call_llm(client: groq.Groq, text: str) -> str:
     return response.choices[0].message.content or ""
 
 
+def _user_message(error: groq.APIError) -> str:
+    if isinstance(error, groq.APITimeoutError):
+        return "The AI service took too long to respond. Please try again."
+    if isinstance(error, groq.AuthenticationError):
+        return "The AI service rejected the API key. Check GROQ_API_KEY."
+    if isinstance(error, groq.NotFoundError):
+        return "The configured AI model is unavailable."
+    if isinstance(error, groq.RateLimitError):
+        return "The AI service is busy right now. Please try again shortly."
+    return "The AI service is unavailable right now. Please try again."
+
+
 def summarize(text: str) -> tuple[str, list[str]]:
     """Return (summary, tags). Retries once if the output is malformed."""
     client = _get_client()
-    for attempt in range(2):
+    for attempt in range(1, 3):
         try:
             return parse_llm_output(_call_llm(client, text))
-        except LLMOutputError:
-            if attempt == 1:
+        except LLMOutputError as e:
+            logger.warning("Malformed LLM output (attempt %d of 2): %s", attempt, e)
+            if attempt == 2:
                 raise LLMServiceError(
                     "The AI returned an unexpected response. Please try again."
-                )
-        except groq.APITimeoutError:
-            raise LLMServiceError("The AI service took too long to respond. Please try again.")
-        except groq.AuthenticationError:
-            raise LLMServiceError("The AI service rejected the API key. Check GROQ_API_KEY.")
-        except groq.RateLimitError:
-            raise LLMServiceError("The AI service is busy right now. Please try again shortly.")
-        except groq.APIError:
-            raise LLMServiceError("The AI service is unavailable right now. Please try again.")
+                ) from e
+        except groq.APIError as e:
+            logger.warning("LLM call failed: %s: %s", type(e).__name__, e)
+            raise LLMServiceError(_user_message(e)) from e

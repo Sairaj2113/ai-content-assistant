@@ -1,15 +1,17 @@
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data.db"
+DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data.db"
 
 PREVIEW_LENGTH = 120
 
 
 def _connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    # Read on every connection so tests can point DB_PATH at a temp file.
+    conn = sqlite3.connect(os.getenv("DB_PATH") or DEFAULT_DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
