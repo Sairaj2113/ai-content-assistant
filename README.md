@@ -8,7 +8,7 @@ A small full-stack prototype: paste a block of text (notes, an article draft, a 
 
 ## Setup
 
-**Prerequisites:** Python 3.10+, Node.js 20+, and a Groq API key (free at [console.groq.com](https://console.groq.com)).
+**Prerequisites:** Python 3.10+, Node.js 20.19+ or 22.12+, and a Groq API key (free at [console.groq.com](https://console.groq.com)).
 
 **1. Configure** (from the repo root):
 
@@ -73,12 +73,12 @@ The React form sends `POST /entries` to FastAPI, where Pydantic rejects empty or
 Groq with `openai/gpt-oss-20b`, run with `reasoning_effort="low"`. Summarizing and tagging short text doesn't need a large model, and Groq's inference is very fast with a free tier, which suits a prototype. JSON mode guarantees parseable output. The provider call lives in one file and the model name comes from `.env`, so switching models or providers is a small, isolated change. I did this twice during the build: from Anthropic to Groq, and again when Groq retired `llama-3.3-70b-versatile`.
 
 ### 3. Reliability
-The LLM call has a 30s timeout, and the SDK's own retries are off so that limit holds. If the output is malformed (bad JSON, missing summary, wrong tag count), the backend retries once; if it fails again, or on a timeout, bad key, rate limit or retired model, it returns a 502 with a specific readable message and saves nothing. The real error is logged server-side, without the API key or user text. The frontend shows the message and keeps the user's text for retry. Testing also found the model could return a refusal in valid JSON, which passes schema checks; the prompt now tells it to describe instructions neutrally, and a production system would add an output check for this.
+Each LLM call has a 30s HTTP timeout, with the SDK's own retries disabled. If the output is malformed (bad JSON, missing summary, wrong or duplicate tags), the backend retries once, so the worst case is two calls. On a second failure, a timeout, bad key, rate limit, or retired model, it returns a 502 with a specific message and saves nothing; the real error is logged server-side without the key or user text. The frontend shows the message, keeps the user's text, and offers Retry if the entry list fails to load. Known gap: the model once returned a refusal in valid JSON; the prompt now asks it to describe instructions neutrally, but production would need an output check.
 
-![Error shown when the AI call fails](docs/error-state.png)
+![Error state with Retry when the backend is unreachable](docs/error-state.png)
 
 ### 4. Privacy
-The full submitted text and the system prompt are sent to Groq; no user identifiers or metadata. In financial services I would avoid sending customer PII such as names, PAN, Aadhaar, account or loan numbers, and phone numbers. I would mask these before the call, use a paid tier with a data-processing agreement (no training on inputs, limited retention), and check data-residency requirements. User text is also wrapped in delimiters, with any `</text>` stripped, so it is treated as content, not instructions.
+The full submitted text and the system prompt are sent to Groq; no user identifiers or metadata. No redaction is implemented, so any names or account numbers pasted into the text are sent as-is. In financial services I would mask PII (names, PAN, Aadhaar, account/loan numbers, phone numbers) before the call, use a paid tier with a data-processing agreement (no training, limited retention), and check data-residency rules. Delimiters and stripping `</text>` reduce prompt-injection risk but don't eliminate it.
 
 ### 5. Production next step
 - **Data protection:** PII redaction before the LLM call, authentication, and an enterprise LLM agreement.
@@ -86,7 +86,7 @@ The full submitted text and the system prompt are sent to Groq; no user identifi
 - **Quality and operations:** a small evaluation set to tune and regression-test the prompt (summary length, refusals), latency/cost/error metrics, and Postgres with migrations.
 
 ### 6. AI coding tools
-I used Claude (chat) to plan the architecture and review decisions, and Claude Code in VS Code to write the code from scoped prompts. I reviewed each diff, ran stubbed smoke tests, the pytest suite, and manual browser checks before every commit. Real testing caught issues the generated code missed: the configured Groq model had been retired (diagnosed with a direct API script), the model used a Unicode hyphen (now normalized), summaries were longer than intended (prompt tuned), and a refusal was saved as a summary (prompt fixed). I also confirmed design choices such as disabling SDK retries so the 30s timeout is real.
+I used Claude (chat) for planning and design review, and Claude Code in VS Code to implement from small, scoped prompts. I reviewed every diff and validated with stubbed smoke tests, the pytest suite, and manual browser checks before each commit. Real testing caught what generated code missed: a retired Groq model, a Unicode hyphen in tags, over-long summaries, and a refusal saved as a summary. A final AI-assisted review found an unclosed SQLite connection, a list error with no recovery path, duplicate tags being accepted, and overstated README claims; all were fixed and covered by tests where possible.
 
 ## Deliberately out of scope
 Authentication, Docker/CI, cloud deployment, and monitoring were left out to respect the timebox; see "Production next step" above.

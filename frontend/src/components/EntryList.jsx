@@ -4,9 +4,16 @@ function truncate(text, length) {
   return text.length > length ? `${text.slice(0, length).trimEnd()}…` : text;
 }
 
-export default function EntryList({ entries, loading, error, selectedId, onSelect }) {
+export default function EntryList({ entries, loading, error, selectedId, onSelect, onRetry }) {
   if (loading) return <p className="muted">Loading entries…</p>;
-  if (error) return <p className="error">{error}</p>;
+  if (error) {
+    return (
+      <p className="error">
+        {error}{" "}
+        <button className="secondary" onClick={onRetry}>Retry</button>
+      </p>
+    );
+  }
   if (entries.length === 0) return <p className="muted">No entries yet.</p>;
 
   return (

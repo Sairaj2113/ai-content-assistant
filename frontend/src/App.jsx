@@ -10,18 +10,27 @@ export default function App() {
   const [listError, setListError] = useState("");
   const [selectedId, setSelectedId] = useState(null);
 
-  useEffect(() => {
+  function loadEntries() {
+    setLoading(true);
+    setListError("");
     listEntries()
       .then(setEntries)
       .catch((err) => setListError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(loadEntries, []);
 
   function handleCreated(entry) {
     // POST returns the full entry; the list only needs a short preview of the text.
     const { text, ...rest } = entry;
     setEntries((current) => [{ ...rest, preview: text.slice(0, 120) }, ...current]);
     setSelectedId(entry.id);
+    // Sync with the server in the background (also recovers from a failed initial load).
+    setListError("");
+    listEntries()
+      .then(setEntries)
+      .catch((err) => setListError(err.message));
   }
 
   return (
@@ -37,6 +46,7 @@ export default function App() {
             error={listError}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            onRetry={loadEntries}
           />
         </section>
         <section className="column">

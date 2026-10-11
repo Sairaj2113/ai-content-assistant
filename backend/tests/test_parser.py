@@ -31,6 +31,7 @@ def test_tags_are_normalized():
         pytest.param('{"summary": "S.", "tags": ["a", "b", "c", "d"]}', id="four-tags"),
         pytest.param('{"summary": "S.", "tags": ["a", "b", 3]}', id="non-string-tag"),
         pytest.param('{"summary": "S.", "tags": ["a", "b", "!!!"]}', id="tag-empty-after-normalizing"),
+        pytest.param('{"summary": "S.", "tags": ["Web APIs", "web-apis", "c"]}', id="duplicate-tags"),
     ],
 )
 def test_rejects_bad_output(raw):

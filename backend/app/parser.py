@@ -50,4 +50,8 @@ def parse_llm_output(raw: str) -> tuple[str, list[str]]:
     if not all(isinstance(tag, str) and tag.strip() for tag in tags):
         raise LLMOutputError("Every tag must be a non-empty string")
 
-    return summary.strip(), [_normalize_tag(tag) for tag in tags]
+    normalized = [_normalize_tag(tag) for tag in tags]
+    if len(set(normalized)) != len(normalized):
+        raise LLMOutputError("Tags must be unique after normalization")
+
+    return summary.strip(), normalized

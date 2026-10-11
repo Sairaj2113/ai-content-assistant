@@ -12,7 +12,8 @@ VALID_REPLY = '{"summary": "A short summary.", "tags": ["python", "web-apis", "t
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     """A test client backed by a fresh SQLite file, with the real LLM call disabled."""
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    db_file = tmp_path / "test.db"
+    monkeypatch.setenv("DB_PATH", str(db_file))
     monkeypatch.setenv("GROQ_API_KEY", "test-key")
 
     def no_real_calls(client, text):
@@ -21,6 +22,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(llm, "_call_llm", no_real_calls)
     with TestClient(app) as c:
         yield c
+    # On Windows this fails if any SQLite connection was left open.
+    db_file.unlink()
 
 
 @pytest.fixture

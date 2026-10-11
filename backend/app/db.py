@@ -1,6 +1,8 @@
 import json
 import os
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -9,11 +11,16 @@ DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data.db"
 PREVIEW_LENGTH = 120
 
 
-def _connect() -> sqlite3.Connection:
+@contextmanager
+def _connect() -> Iterator[sqlite3.Connection]:
     # Read on every connection so tests can point DB_PATH at a temp file.
     conn = sqlite3.connect(os.getenv("DB_PATH") or DEFAULT_DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        with conn:  # commits on success, rolls back on error
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_db() -> None:
